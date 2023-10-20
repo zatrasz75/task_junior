@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/joho/godotenv"
+	"github.com/zatrasz75/task_junior/configs"
+	"github.com/zatrasz75/task_junior/internal/app"
 	"github.com/zatrasz75/task_junior/pkg/logger"
 )
 
@@ -13,5 +15,6 @@ func init() {
 }
 
 func main() {
-
+	cfg := configs.New()
+	app.Run(cfg)
 }
