@@ -86,5 +86,7 @@ func (api *API) Stop() error {
 }
 
 func (api *API) endpoints() {
-	api.r.HandleFunc("/data", api.controllers.GetPerson).Methods(http.MethodPost)
+	api.r.HandleFunc("/api/data", api.controllers.ReceiveSave).Methods(http.MethodPost)
+	api.r.HandleFunc("/data", api.controllers.GetData).Methods(http.MethodGet)
+	api.r.HandleFunc("/data/{id}", api.controllers.DeleteData).Methods(http.MethodDelete)
 }

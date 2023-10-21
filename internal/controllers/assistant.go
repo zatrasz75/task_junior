@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"net/http"
+	"strconv"
 )
 
 func getAgeFromAPI(name string) (int, error) {
@@ -97,4 +98,14 @@ func getNationalityFromAPI(name string) (string, error) {
 	}
 
 	return nationality, nil
+}
+
+// Вспомогательная функция для преобразования строки в число .
+func parseQueryParam(param string) int {
+	value, err := strconv.Atoi(param)
+	if err != nil || value <= 0 {
+		// Если произошла ошибка или значение некорректное, используем значение по умолчанию.
+		return 1
+	}
+	return value
 }
