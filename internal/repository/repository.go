@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/zatrasz75/task_junior/internal/models"
 	"github.com/zatrasz75/task_junior/pkg/postgres"
+	"strconv"
 )
 
 type Store struct {
@@ -66,4 +67,43 @@ func (s *Store) DeleteDataByID(id int) error {
 	}
 
 	return nil
+}
+
+// UpdateDataByID обновляет все данные сущности по ее идентификатору.
+func (s *Store) UpdateDataByID(id int, newData models.Person) error {
+	_, err := s.DB.Exec(context.Background(), `
+       UPDATE people
+       SET name=$2, surname=$3, patronymic=$4, age=$5, gender=$6, nationality=$7
+       WHERE id=$1;
+    `,
+		id,
+		newData.Name,
+		newData.Surname,
+		newData.Patronymic,
+		newData.Age,
+		newData.Gender,
+		newData.Nationality,
+	)
+
+	return err
+}
+
+// PartialUpdateDataByID частично обновляет данные сущности по ее идентификатору.
+func (s *Store) PartialUpdateDataByID(id int, partialData map[string]interface{}) error {
+	// SQL-запрос на основе частичных данных.
+	query := "UPDATE people SET"
+	args := []interface{}{id}
+	argIndex := 2 // Индекс первого аргумента после id.
+
+	for key, value := range partialData {
+		query += " " + key + " = $" + strconv.Itoa(argIndex) + ","
+		args = append(args, value)
+		argIndex++
+	}
+	// Удаление последней запятой из запроса.
+	query = query[:len(query)-1]
+
+	query += " WHERE id = $1;"
+	_, err := s.DB.Exec(context.Background(), query, args...)
+	return err
 }

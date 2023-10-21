@@ -85,7 +85,7 @@ func (s *Server) ReceiveSave(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResponse)
 }
 
-// GetData Метод для обработки GET-запроса с JSON-данными
+// GetData Метод для обработки GET-запроса с JSON-данными, фильтрами и пагинацией
 func (s *Server) GetData(w http.ResponseWriter, r *http.Request) {
 	genderFilter := r.URL.Query().Get("gender")  // фильтрация данных по полу.
 	pageStr := r.URL.Query().Get("page")         // текущая страница данных.
@@ -111,6 +111,7 @@ func (s *Server) GetData(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(data)
 }
 
+// DeleteData Метод для обработки DELETE-запроса /data/{id}.
 func (s *Server) DeleteData(w http.ResponseWriter, r *http.Request) {
 	idParam := mux.Vars(r)["id"]
 	if idParam == "" {
@@ -132,4 +133,69 @@ func (s *Server) DeleteData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]string{"message": "Данные успешно удалены"}
 	json.NewEncoder(w).Encode(response)
+}
+
+// UpdateData Обработчик для HTTP метода PUT для полного обновления сущности /data/{id}.
+func (s *Server) UpdateData(w http.ResponseWriter, r *http.Request) {
+	idParam := mux.Vars(r)["id"]
+	if idParam == "" {
+		logger.Info("Отсутствует идентификатор")
+		http.Error(w, "Отсутствует идентификатор", http.StatusBadRequest)
+		return
+	}
+	id := parseQueryParam(idParam)
+
+	var updatedData models.Person
+	err := json.NewDecoder(r.Body).Decode(&updatedData)
+	if err != nil {
+		logger.Error("Ошибка при чтении JSON", err)
+		http.Error(w, "Ошибка при чтении JSON", http.StatusBadRequest)
+		return
+	}
+
+	err = s.PG.UpdateDataByID(id, updatedData)
+	if err != nil {
+		logger.Error("Ошибка при обновлении данных", err)
+		http.Error(w, "Ошибка при обновлении данных", http.StatusInternalServerError)
+		return
+	}
+	logger.Info("Данные c id %d успешно обновлены", id)
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{"message": "Данные успешно обновлены"}
+	json.NewEncoder(w).Encode(response)
+}
+
+// PartialUpdateData Обработчик для HTTP метода PATCH для частичного обновления сущности /data/{id}.
+func (s *Server) PartialUpdateData(w http.ResponseWriter, r *http.Request) {
+	idParam := mux.Vars(r)["id"]
+	if idParam == "" {
+		logger.Info("Отсутствует идентификатор")
+		http.Error(w, "Отсутствует идентификатор", http.StatusBadRequest)
+		return
+	}
+	id := parseQueryParam(idParam)
+
+	var partialData map[string]interface{}
+	err := json.NewDecoder(r.Body).Decode(&partialData)
+	if err != nil {
+		logger.Error("Ошибка при чтении JSON", err)
+		http.Error(w, "Ошибка при чтении JSON", http.StatusBadRequest)
+		return
+	}
+
+	err = s.PG.PartialUpdateDataByID(id, partialData)
+	if err != nil {
+		logger.Error("Ошибка при частичном обновлении данных", err)
+		http.Error(w, "Ошибка при частичном обновлении данных", http.StatusInternalServerError)
+		return
+	}
+	logger.Info("Частичные данные c id %d успешно обновлены", id)
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{"message": "Частичные данные успешно обновлены"}
+	json.NewEncoder(w).Encode(response)
+
 }
