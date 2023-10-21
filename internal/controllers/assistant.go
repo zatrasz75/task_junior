@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/zatrasz75/task_junior/pkg/logger"
 	"net/http"
 	"strconv"
 )
@@ -11,7 +13,13 @@ import (
 func getAgeFromAPI(name string) (int, error) {
 	apiUrl := fmt.Sprintf("https://api.agify.io/?name=" + name)
 
-	resp, err := http.Get(apiUrl)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := httpClient.Get(apiUrl)
 	if err != nil {
 		return 0, err
 	}
@@ -30,6 +38,7 @@ func getAgeFromAPI(name string) (int, error) {
 		return 0, err
 	}
 	if result.Age != nil {
+		logger.Info("Обогащен возраст %d ", *result.Age)
 		return *result.Age, nil
 	}
 
@@ -39,7 +48,13 @@ func getAgeFromAPI(name string) (int, error) {
 func getGenderFromAPI(name string) (string, error) {
 	apiUrl := fmt.Sprintf("https://api.genderize.io/?name=" + name)
 
-	resp, err := http.Get(apiUrl)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := httpClient.Get(apiUrl)
 	if err != nil {
 		return "", err
 	}
@@ -57,6 +72,7 @@ func getGenderFromAPI(name string) (string, error) {
 	if err = decoder.Decode(&result); err != nil {
 		return "", err
 	}
+	logger.Info("Обогащен пол %s ", result.Gender)
 
 	return result.Gender, nil
 }
@@ -64,7 +80,13 @@ func getGenderFromAPI(name string) (string, error) {
 func getNationalityFromAPI(name string) (string, error) {
 	apiUrl := fmt.Sprintf("https://api.nationalize.io/?name=" + name)
 
-	resp, err := http.Get(apiUrl)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := httpClient.Get(apiUrl)
 	if err != nil {
 		return "", err
 	}
@@ -96,6 +118,7 @@ func getNationalityFromAPI(name string) (string, error) {
 			nationality = country.CountryID
 		}
 	}
+	logger.Info("Обогащена национальность %s ", nationality)
 
 	return nationality, nil
 }
