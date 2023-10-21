@@ -16,16 +16,6 @@ func New(pg *postgres.PostgreDB) *Store {
 	return &Store{pg}
 }
 
-// SavePersonToDate Сохраняет данные в базу данных и возвращает ID записи
-func (s *Store) SavePersonToDate(p models.Person) (int, error) {
-	result := s.PG.Create(&p)
-	if result.Error != nil {
-		return 0, result.Error
-	}
-
-	return p.ID, nil
-}
-
 // Select выполняет SQL-запрос для выборки данных из таблицы с фильтрами и пагинацией.
 func (s *Store) Select(genderFilter string, age, page, pageSize int) ([]models.Person, error) {
 	// Создаем SQL-запрос с учетом фильтра и пагинации.
@@ -106,4 +96,18 @@ func (s *Store) PartialUpdateDataByID(id int, partialData map[string]interface{}
 	query += " WHERE id = $1;"
 	_, err := s.DB.Exec(context.Background(), query, args...)
 	return err
+}
+
+// SaveNewPeople Сохраняет новые данные в базу данных и возвращает ID записи.
+func (s *Store) SaveNewPeople(newData models.Person) (int, error) {
+	query := "INSERT INTO people (name, surname, patronymic, age, gender, nationality) VALUES ($1, $2, $3,$4, $5, $6) RETURNING id"
+
+	var id int
+	err := s.DB.QueryRow(context.Background(), query, newData.Name, newData.Surname, newData.Patronymic, newData.Age, newData.Gender, newData.Nationality).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+
 }

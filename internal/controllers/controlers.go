@@ -65,7 +65,7 @@ func (s *Server) ReceiveSave(w http.ResponseWriter, r *http.Request) {
 
 	wg.Wait()
 
-	id, err := s.PG.SavePersonToDate(p)
+	id, err := s.PG.SaveNewPeople(p)
 	if err != nil {
 		logger.Error("не получилось сохранить данные в базу данных", err)
 		return
@@ -197,5 +197,68 @@ func (s *Server) PartialUpdateData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]string{"message": "Частичные данные успешно обновлены"}
 	json.NewEncoder(w).Encode(response)
+}
 
+// AddingNewPeople Метод для обработки POST-запроса /data.
+func (s *Server) AddingNewPeople(w http.ResponseWriter, r *http.Request) {
+	var newData models.Person
+	err := json.NewDecoder(r.Body).Decode(&newData)
+	if err != nil {
+		logger.Error("Ошибка при чтении JSON", err)
+		http.Error(w, "Ошибка при чтении JSON", http.StatusBadRequest)
+		return
+	}
+	// Проверка на обязательные поля: имя и фамилия.
+	if newData.Name == "" || newData.Surname == "" {
+		http.Error(w, "Имя и фамилия обязательны", http.StatusBadRequest)
+		logger.Debug("Имя и фамилия обязательны")
+		return
+	}
+
+	// Обогащаем данные из внешнего API
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		age, err := getAgeFromAPI(newData.Name)
+		if err != nil {
+			http.Error(w, "Не удалось получить данные о возрасте", http.StatusInternalServerError)
+			logger.Error("Не удалось получить данные о возрасте", err)
+		}
+		newData.Age = age
+	}()
+	go func() {
+		defer wg.Done()
+		gender, err := getGenderFromAPI(newData.Name)
+		if err != nil {
+			http.Error(w, "Не удалось получить данные о поле", http.StatusInternalServerError)
+			logger.Error("Не удалось получить данные о поле", err)
+		}
+		newData.Gender = gender
+	}()
+	go func() {
+		defer wg.Done()
+		nationality, err := getNationalityFromAPI(newData.Name)
+		if err != nil {
+			http.Error(w, "Не удалось получить данные о национальности", http.StatusInternalServerError)
+			logger.Error("Не удалось получить данные о национальности", err)
+		}
+		newData.Nationality = nationality
+	}()
+
+	wg.Wait()
+
+	id, err := s.PG.SaveNewPeople(newData)
+	if err != nil {
+		logger.Error("Ошибка при сохранении данных в базу данных", err)
+		http.Error(w, "Ошибка при сохранении данных в базу данных", http.StatusInternalServerError)
+		return
+	}
+	logger.Info("Новый пользователь успешно добавлен c id %d", id)
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]int{"Новый пользователь успешно добавлен c id": id}
+	json.NewEncoder(w).Encode(response)
 }
