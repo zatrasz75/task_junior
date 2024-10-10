@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/zatrasz75/task_junior/configs"
 	"github.com/zatrasz75/task_junior/internal/controllers"
+	"github.com/zatrasz75/task_junior/internal/middleware"
 	"github.com/zatrasz75/task_junior/internal/repository"
 	"github.com/zatrasz75/task_junior/pkg/logger"
 	"net/http"
@@ -41,6 +42,7 @@ func New(cfg *configs.Config, pg *repository.Store) *API {
 		shutdownTime: cfg.Server.ShutdownTime,
 		controllers:  &controllers.Server{PG: pg},
 	}
+	api.r.Use(middleware.LoggingResponse)
 
 	// Регистрируем обработчики API.
 	api.endpoints()

@@ -3,6 +3,8 @@ module github.com/zatrasz75/task_junior
 go 1.21.1
 
 require (
+	github.com/gofrs/uuid v4.0.0+incompatible
+	github.com/gofrs/uuid/v5 v5.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/joho/godotenv v1.5.1
